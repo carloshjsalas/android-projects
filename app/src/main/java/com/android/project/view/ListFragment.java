@@ -5,7 +5,6 @@ import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MenuItemCompat;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -19,9 +18,9 @@ import com.android.project.R;
 import com.android.project.application.Application;
 import com.android.project.data.DataManager;
 import com.android.project.databinding.FragmentListBinding;
-import com.android.project.model.Article;
-import com.android.project.model.ArticleResponse;
-import com.android.project.viewmodel.ArticleViewModel;
+import com.android.project.model.GalleryItem;
+import com.android.project.model.GetPhotosResponse;
+import com.android.project.viewmodel.ImageViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +39,9 @@ public class ListFragment extends Fragment implements SearchView.OnQueryTextList
     private CompositeSubscription mSubscriptions;
     private DataManager mDataManager;
     private FragmentListBinding mFragmentDataBinding;
-    private List<Article> mArticles = new ArrayList<>();
-    private ArticleViewModel mArticleViewModel;
+    private List<GalleryItem> mImages = new ArrayList<>();
+    private ImageViewModel mImagesViewModel;
+    private Subscription mSubscription;
 
     public static ListFragment newInstance() {
         return new ListFragment();
@@ -57,7 +57,7 @@ public class ListFragment extends Fragment implements SearchView.OnQueryTextList
         setHasOptionsMenu(true);
         mSubscriptions = new CompositeSubscription();
         mDataManager = Application.tdApplication().getComponent().dataManager();
-        mArticleViewModel = new ArticleViewModel(getContext());
+        mImagesViewModel = new ImageViewModel();
     }
 
     @Override
@@ -70,68 +70,57 @@ public class ListFragment extends Fragment implements SearchView.OnQueryTextList
 
     private View bindView(View view) {
         mFragmentDataBinding = DataBindingUtil.bind(view);
-        mFragmentDataBinding.setViewModel(mArticleViewModel);
-
-        mFragmentDataBinding.listArticles.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-
-
-
-            }
-        });
-
-
+        mFragmentDataBinding.setViewModel(mImagesViewModel);
         return view;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        loadArticles();
-    }
-
-    private void loadArticles() {
-        Subscription subscription = mDataManager.getImagesUrl()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeOn(mDataManager.getScheduler())
-                .subscribe(new Subscriber<ArticleResponse>() {
-                    @Override
-                    public void onCompleted() {
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.d("Error", e.getMessage());
-                    }
-
-                    @Override
-                    public void onNext(ArticleResponse result) {
-                        if (result != null && result.getArticles() != null) {
-                            Log.d("Result", result.toString());
-                            parseImages(result);
-                        }
-                    }
-                });
-
-        mSubscriptions.add(subscription);
-    }
-
-    private void parseImages(ArticleResponse articleResponse) {
-        mArticles.clear();
-        for (Article article : articleResponse.getArticles()) {
-            if (article.getType() != null && article.getType().equals("image/jpeg")) {
-                mArticles.add(article);
-            }
+    private void loadImages(String queryToSearch) {
+        if (mSubscription != null || mSubscriptions.hasSubscriptions()) {
+            mSubscriptions.remove(mSubscription);
         }
-        mArticleViewModel.setArticles(mArticles);
+
+        if (queryToSearch.length() >= 3) {
+            mSubscription = mDataManager.getFlickrImagesUrl(queryToSearch)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(mDataManager.getScheduler())
+                    .subscribe(new Subscriber<GetPhotosResponse>() {
+                        @Override
+                        public void onCompleted() {
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.d("Error", e.getMessage());
+                        }
+
+                        @Override
+                        public void onNext(GetPhotosResponse result) {
+                            if (result != null && result.getPhotoMeta() != null && result.getStat().equals("ok")) {
+                                Log.d("Result", result.toString());
+                                parseImages(result);
+                            } else if (result.getStat().equals("fail")) {
+                                showEmptyMessage();
+                            }
+                        }
+                    });
+
+            mSubscriptions.add(mSubscription);
+        } else {
+            mImagesViewModel.setImages(null);
+        }
+    }
+
+    private void parseImages(GetPhotosResponse articleResponse) {
+        mImages.clear();
+        for (GalleryItem article : articleResponse.getPhotoMeta().getGalleryItems()) {
+            mImages.add(article);
+        }
+        mImagesViewModel.setImages(mImages);
     }
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        final List<Article> filteredlList = filter(mArticles, newText);
-        mArticleViewModel.setArticles(filteredlList);
+        loadImages(newText);
         return true;
     }
 
@@ -147,50 +136,10 @@ public class ListFragment extends Fragment implements SearchView.OnQueryTextList
         final MenuItem item = menu.findItem(R.id.action_search);
         final SearchView searchView = (SearchView) MenuItemCompat.getActionView(item);
         searchView.setOnQueryTextListener(this);
-
-        MenuItemCompat.setOnActionExpandListener(item,
-                new MenuItemCompat.OnActionExpandListener() {
-                    @Override
-                    public boolean onMenuItemActionCollapse(MenuItem item) {
-                        // Do something when collapsed
-                        menu.findItem(R.id.action_order).setVisible(true);
-                        mArticleViewModel.setArticles(mArticles);
-                        return true; // Return true to collapse action view
-                    }
-
-                    @Override
-                    public boolean onMenuItemActionExpand(MenuItem item) {
-                        // Do something when expanded
-                        menu.findItem(R.id.action_order).setVisible(false);
-                        return true; // Return true to expand action view
-                    }
-                });
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_order:
-                if (mArticleViewModel != null) {
-                    mArticleViewModel.orderList();
-                }
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
+    private void showEmptyMessage() {
 
-    private List<Article> filter(List<Article> articles, String query) {
-        query = query.toLowerCase();
-
-        final List<Article> filteredList = new ArrayList<>();
-        for (Article article : articles) {
-            final String text = article.getTitle().toLowerCase();
-            if (text.contains(query)) {
-                filteredList.add(article);
-            }
-        }
-        return filteredList;
     }
 
 }

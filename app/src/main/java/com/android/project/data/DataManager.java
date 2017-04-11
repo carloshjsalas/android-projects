@@ -4,7 +4,7 @@ import com.android.project.application.Application;
 import com.android.project.data.remote.APIService;
 import com.android.project.injection.component.DaggerDataManagerComponent;
 import com.android.project.injection.module.DataManagerModule;
-import com.android.project.model.ArticleResponse;
+import com.android.project.model.GetPhotosResponse;
 
 import javax.inject.Inject;
 
@@ -39,8 +39,15 @@ public class DataManager {
         return mSubscribeScheduler;
     }
 
-    public Observable<ArticleResponse> getImagesUrl() {
-        return mAPIService.getImagesUrl();
+    public Observable<GetPhotosResponse> getFlickrImagesUrl(String querySearch) {
+        return mAPIService.getFlickrImagesUrl(
+                APIService.FLICKR_PARAM_METHOD,
+                APIService.FLICKR_PARAM_API_KEY,
+                APIService.FLICKR_PARAM_FORMAT,
+                APIService.FLICKR_PARAM_NOJSCALLBACK,
+                APIService.FLICKR_PARAM_EXTRAS,
+                querySearch
+        );
     }
 }
 

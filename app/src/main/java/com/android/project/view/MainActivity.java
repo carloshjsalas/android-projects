@@ -1,9 +1,7 @@
 package com.android.project.view;
 
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 
 import com.android.project.R;
 
@@ -21,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupUI() {
-        getSupportActionBar().setTitle(getString(R.string.articles));
+        getSupportActionBar().setTitle(getString(R.string.app_name));
     }
 
     private void addListFragment() {

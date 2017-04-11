@@ -7,9 +7,9 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import com.android.project.R;
-import com.android.project.databinding.ItemArticleBinding;
-import com.android.project.model.Article;
-import com.android.project.viewmodel.ArticleViewModel;
+import com.android.project.databinding.ItemImageBinding;
+import com.android.project.model.GalleryItem;
+import com.android.project.viewmodel.ImageViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,23 +17,23 @@ import java.util.List;
 /**
  * Created by carlossalas on 10/6/16.
  */
-public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.BindingHolder> {
+public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.BindingHolder> {
 
     private final Context mContext;
-    private List<Article> mArticles = new ArrayList<>();
-    private ItemArticleBinding mItemBinding;
-    private ArticleViewModel mViewModel;
+    private List<GalleryItem> mImages = new ArrayList<>();
+    private ItemImageBinding mItemBinding;
+    private ImageViewModel mViewModel;
 
-    public ArticleAdapter(Context context, List<Article> articles) {
+    public ImageAdapter(Context context, List<GalleryItem> images) {
         this.mContext = context;
-        this.mArticles = articles;
+        this.mImages = images;
     }
 
     @Override
-    public ArticleAdapter.BindingHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        ItemArticleBinding binding = DataBindingUtil.inflate(
+    public ImageAdapter.BindingHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        ItemImageBinding binding = DataBindingUtil.inflate(
                 LayoutInflater.from(parent.getContext()),
-                R.layout.item_article,
+                R.layout.item_image,
                 parent,
                 false
         );
@@ -43,30 +43,30 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.BindingH
     @Override
     public void onBindViewHolder(BindingHolder holder, int position) {
         mItemBinding = holder.binding;
-        mViewModel = new ArticleViewModel(mContext);
-        mViewModel.setArticle(mArticles.get(position));
+        mViewModel = new ImageViewModel();
+        mViewModel.setImage(mImages.get(position));
         mItemBinding.setViewModel(mViewModel);
     }
 
     @Override
     public int getItemCount() {
-        return mArticles.size();
+        return mImages.size();
     }
 
     @Override
     public long getItemId(int position) {
-        return mArticles.get(position).getId().hashCode();
+        return mImages.get(position).getId().hashCode();
     }
 
-    public void setArticles(List<Article> articles) {
-        this.mArticles = articles;
+    public void setArticles(List<GalleryItem> articles) {
+        this.mImages = articles;
         notifyDataSetChanged();
     }
 
     public static class BindingHolder extends RecyclerView.ViewHolder {
-        private ItemArticleBinding binding;
+        private ItemImageBinding binding;
 
-        public BindingHolder(ItemArticleBinding binding) {
+        public BindingHolder(ItemImageBinding binding) {
             super(binding.containerImage);
             this.binding = binding;
         }

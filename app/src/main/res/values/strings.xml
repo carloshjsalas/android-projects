@@ -1,7 +1,8 @@
 <resources>
-    <string name="app_name">Project</string>
-    <string name="articles">Articles</string>
+    <string name="app_name">Flickr Project</string>
     <string name="action_search">Search</string>
     <string name="action_order">Order</string>
     <string name="action_reset">Reset</string>
+
+    <string name="string_empty_message">Type at least 3 characters...</string>
 </resources>
